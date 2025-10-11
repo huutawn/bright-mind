@@ -2,7 +2,8 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession  # Quan trọng
 
-from .models import User
+from .models import User, UserProfile
+from sqlalchemy.orm import selectinload
 from app.core.security import verify_password, get_password_hash
 from .schemas import UserCreateReq, UserResponse, UpdateUserReq
 from .mappers import UserMapper
@@ -10,34 +11,40 @@ from app.helpers.paging import PaginationParams, paginate, Page  # Giả sử pa
 from app.helpers.exception_handler import CustomException, ExceptionType
 
 
+
 class UserService:
     def __init__(self):
         pass
 
-    # THAY ĐỔI 1: Chuyển sang async def
-    # THAY ĐỔI 2: Nhận db: AsyncSession làm tham số
+    
     async def register(self, db: AsyncSession, data: UserCreateReq) -> UserResponse:
-        query = select(User).filter(User.email == data.email)
+        query = select(User).options(selectinload(User.user_profile)).filter(User.email == data.email)
         result = await db.execute(query)
         exits_user = result.scalars().first()
 
         if exits_user:
             raise CustomException(error_type=ExceptionType.EMAIL_IS_TAKEN)
-
+        profile = UserProfile(
+            email=data.email
+        )
         new_user = User(
             email=data.email,
             hash_password=get_password_hash(data.password),
             is_active=data.is_active,
-            full_name=data.full_name,
+            user_profile=profile,
             role=data.role
         )
         db.add(new_user)
-        # THAY ĐỔI 4: Dùng await cho commit và refresh
         await db.commit()
         await db.refresh(new_user)
-        return UserMapper.to_user_response(new_user)
+        result = await db.execute(
+            select(User).options(selectinload(User.user_profile)).where(User.id == new_user.id)
+        )
+        loaded_user = result.scalar_one()
+        logging.info(loaded_user.id)
+        logging.info(loaded_user.user_profile.id)
+        return UserMapper.to_user_response(loaded_user)
 
-    # LƯU Ý: Hàm này không tương tác DB nên không cần async
     def get_my_profile(self, user: User) -> UserResponse:
         logging.info(user.id)
         return UserMapper.to_user_response(user)
@@ -52,7 +59,6 @@ class UserService:
         return UserMapper.to_user_response(user)
 
     async def update(self, db: AsyncSession, user_id: int, data: UpdateUserReq) -> UserResponse:
-        # THAY ĐỔI: Dùng await db.get() để lấy đối tượng theo ID
         user = await db.get(User, user_id)
         if not user:
             raise CustomException(error_type=ExceptionType.USER_NOT_EXITS)

@@ -27,3 +27,4 @@ class CampaignResponse(CampaignBase):
     used_amount: Optional[Decimal]
     creator: Optional['UserResponse']
     end_date: Optional[date]
+    quickly_used: bool

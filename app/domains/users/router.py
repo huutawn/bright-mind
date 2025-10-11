@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, Path
 from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession  # ✅ Thêm import
-
+import json
+import redis
+from app.core.redis_client import get_redis_client
 from app.db.base import get_db  # ✅ Thêm import
 from app.helpers.bases import DataResponse
 from .schemas import UserCreateReq, UserResponse, UpdateUserReq
@@ -34,9 +36,15 @@ async def register(register_data: UserCreateReq,
 @router.get('', response_model=DataResponse[UserResponse])
 async def get_current_info(
         user: User = Depends(get_current_user),
-        user_service: UserService = Depends(get_user_service)
+        user_service: UserService = Depends(get_user_service),
+        redis_client: redis.Redis = Depends(get_redis_client)
 ):
+    cache_key = f"user:{user.id}"
+    cached_user = redis_client.get(cache_key)
+    if cached_user:
+        return DataResponse(data=UserResponse.model_validate(json.loads(cached_user)))
     response = user_service.get_my_profile(user)
+    redis_client.set(cache_key, response.model_dump_json(), ex=600)
     return DataResponse(data=response)
 
 
@@ -45,9 +53,11 @@ async def get_current_info(
 async def update_me(update_data: UpdateUserReq,
                     user: User = Depends(get_current_user),
                     db: AsyncSession = Depends(get_db),
-                    user_service: UserService = Depends(get_user_service)
+                    user_service: UserService = Depends(get_user_service),
+                    redis_client: redis.Redis = Depends(get_redis_client)
                     ):
-    # ✅ Dùng await và truyền db vào service
+    cache_key = f"user:{user.id}"
+    redis_client.delete(cache_key)
     user_updated = await user_service.update_me(db=db, user=user, data=update_data)
     return DataResponse(data=user_updated)
 
@@ -57,9 +67,11 @@ async def update_me(update_data: UpdateUserReq,
 async def update(data: UpdateUserReq,
                  user_id: int = Path(),
                  db: AsyncSession = Depends(get_db),
-                 user_service: UserService = Depends(get_user_service)
+                 user_service: UserService = Depends(get_user_service),
+                 redis_client: redis.Redis = Depends(get_redis_client)
                  ):
-    # ✅ Dùng await và truyền db vào service
+    cache_key = f"user:{user_id}"
+    redis_client.delete(cache_key)
     user_updated = await user_service.update(db=db, id=user_id, data=data)
     return DataResponse(data=user_updated)
 
@@ -68,7 +80,14 @@ async def update(data: UpdateUserReq,
 async def get_all(params: PaginationParams = Depends(),
                   db: AsyncSession = Depends(get_db),
                   current_admin: User = Depends(require_admin_role),
-                  user_service: UserService = Depends(get_user_service)
+                  user_service: UserService = Depends(get_user_service),
+                  redis_client: redis.Redis = Depends(get_redis_client)
                   ) -> Any:
+    cache_key = f"users:page_{params.page}:size_{params.size}"
+    cached_users = redis_client.get(cache_key)
+    if cached_users:
+        return Page[UserResponse].model_validate(json.loads(cached_users))
+
     users_page = await user_service.get_all_user(db=db, params=params)
+    redis_client.set(cache_key, users_page.model_dump_json(), ex=600)
     return users_page

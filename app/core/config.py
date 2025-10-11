@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 60 * 24 * 7 * 4
     SECRET_KEY: str
     DATABASE_URL: str
+    PAYOS_CLIENT_ID: str
+    PAYOS_API_KEY: str
+    PAYOS_CHECKSUM_KEY: str
+    REDIS_URL:str
 
 
 

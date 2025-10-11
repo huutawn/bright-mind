@@ -3,6 +3,7 @@ from fastapi.security import HTTPBearer
 import jwt
 from pydantic import ValidationError
 from app.core.config import settings
+from typing import Optional
 from app.db.base import get_db
 from sqlalchemy import select
 from ..domains.users.models import User
@@ -12,8 +13,15 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from ..helpers.exception_handler import CustomException, ExceptionType
 import logging
 
-reusable_oauth2 = HTTPBearer(scheme_name='Authorization')
 
+reusable_oauth2 = HTTPBearer(scheme_name='Authorization')
+optional_bearer = HTTPBearer(auto_error=False)
+
+async def get_current_user_optional(db: AsyncSession = Depends(get_db),
+                           http_authorization_credentials=Depends(optional_bearer)) -> Optional[User]:
+    if http_authorization_credentials:
+        return await get_current_user(db, http_authorization_credentials)
+    return None
 
 async def get_current_user(db: AsyncSession = Depends(get_db),
                            http_authorization_credentials=Depends(reusable_oauth2)) -> User:

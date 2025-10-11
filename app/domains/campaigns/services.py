@@ -20,7 +20,7 @@ class CampaignService:
             raise CustomException(ExceptionType.USER_BANNED)
         campaign = Campaign(
             title=data.title,
-            description = data.description,
+            description=data.description,
             cover_image_url = data.cover_image_url,
             goal_amount = data.goal_amount,
             end_date = self.calculate_end_date(data.goal_amount),
@@ -30,11 +30,21 @@ class CampaignService:
         db.add(campaign)
         await db.commit()
         await db.refresh(campaign)
-        return CampaignMapper.toCampaignResponse(campaign)
+        res = await db.execute(
+        select(Campaign)
+        .options(
+            selectinload(Campaign.creator).selectinload(User.user_profile)
+        )
+        .where(Campaign.id == campaign.id)
+        )
+        loaded_campaign = res.scalar_one()
+        
+        return CampaignMapper.toCampaignResponse(loaded_campaign)
 
     async def get_all(self,params: PaginationParams, db: AsyncSession):
         _query = select(Campaign).options(
             selectinload(Campaign.creator)
+            .selectinload(User.user_profile)
         ).filter(Campaign.status == CampaignStatus.APPROVED.value)
         mapper = CampaignMapper.toCampaignResponse
 
@@ -48,6 +58,7 @@ class CampaignService:
     async def get_all_pending(self, params: PaginationParams, db: AsyncSession):
         _query = select(Campaign).options(
             selectinload(Campaign.creator)
+            .selectinload(User.user_profile)
         ).filter(Campaign.status == CampaignStatus.PENDING.value)
         mapper = CampaignMapper.toCampaignResponse
 
@@ -59,10 +70,12 @@ class CampaignService:
         return campaigns
 
     async def get_all_depended(self, params: PaginationParams,
-                               db: AsyncSession):
+                               db: AsyncSession, admin: User):
         _query = select(Campaign).options(
             selectinload(Campaign.creator)
-        ).filter(Campaign.status == CampaignStatus.DEPENDED.value)
+            .selectinload(User.user_profile)
+        ).filter(Campaign.status == CampaignStatus.DEPENDED.value,
+                 Campaign.user_depend_id == admin.id)
         mapper = CampaignMapper.toCampaignResponse
 
         campaigns = await paginate(db=db,
@@ -86,7 +99,35 @@ class CampaignService:
             campaign_id=campaign.id,
             status=campaign.status,
         )
+    async def approve_campaign(self, campaign_id: int,
+                               db: AsyncSession) -> CampaignChoosing:
+        campaign: Campaign | None = await db.get(Campaign,campaign_id)
+        if not campaign:
+            raise CustomException(ExceptionType.CAMPAIGN_NOT_FOUND)
+        campaign.status = CampaignStatus.APPROVED.value
+        await db.commit
+        return CampaignChoosing(campaign_id=campaign.id,status=campaign.status)
+    async def get_detail(self, campaign_id: int,
+                         db: AsyncSession) -> CampaignResponse:
+        campaign: Campaign | None = await db.get(Campaign, campaign_id)
+        if not campaign:
+            raise CustomException(ExceptionType.CAMPAIGN_NOT_FOUND)
+        return CampaignMapper.toCampaignResponse(campaign=campaign)
+    
+    async def get_campaign_by_current_admin(self,params: PaginationParams, db: AsyncSession, admin: User):
+        query = select(Campaign).options(
+            selectinload(Campaign.creator)
+            .selectinload(User.user_profile)
+        ).filter(Campaign.creator_id == admin.id)
 
+        mapper = CampaignMapper.toCampaignResponse
+        campaigns = await paginate(db=db,
+                                   model=Campaign,
+                                   query=query,
+                                   mapper=mapper,
+                                   params=params)
+        return campaigns
+    
 
 
 

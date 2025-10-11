@@ -36,7 +36,9 @@ class BareBaseModel(Base):
         server_default=func.now(),
         onupdate=func.now()
     )
-
+class BaseWithId(Base):
+    __abstract__ = True
+    id: Mapped[intpk]
 
 class ResponseSchemaBase(BaseModel):
     code: str = '000'
