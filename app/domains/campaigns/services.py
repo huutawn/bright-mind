@@ -10,6 +10,7 @@ from app.helpers.paging import PaginationParams, paginate
 from ..users.models import User
 from .mappers import CampaignMapper
 from app.helpers.enums import CampaignStatus
+import logging
 
 class CampaignService:
     def __init__(self):
@@ -88,13 +89,19 @@ class CampaignService:
                               db: AsyncSession,
                               admin: User
                               ) -> CampaignChoosing:
+       
         campaign: Campaign | None = await db.get(Campaign, campaign_id)
         if not campaign:
             raise CustomException(ExceptionType.CAMPAIGN_NOT_FOUND)
         campaign.status=CampaignStatus.DEPENDED.value
-        admin.campaign_depended.append(campaign)
-        db.add(admin)
+        campaign.user_depend_id = admin.id
+        campaign.user_depend_on = admin
+        # admin.campaign_depended.append(campaign) # SQLAlchemy handles this via back_populates
+
+        db.add(campaign)
         await db.commit()
+        await db.refresh(campaign)
+
         return CampaignChoosing(
             campaign_id=campaign.id,
             status=campaign.status,
@@ -105,7 +112,7 @@ class CampaignService:
         if not campaign:
             raise CustomException(ExceptionType.CAMPAIGN_NOT_FOUND)
         campaign.status = CampaignStatus.APPROVED.value
-        await db.commit
+        await db.commit()
         return CampaignChoosing(campaign_id=campaign.id,status=campaign.status)
     async def get_detail(self, campaign_id: int,
                          db: AsyncSession) -> CampaignResponse:
@@ -146,7 +153,7 @@ class CampaignService:
         if amount >= ACCELERATION_THRESHOLD:
             num_increments = int(amount // ACCELERATION_THRESHOLD)
 
-            additional_days = ACCELERATION_FACTOR * (num_increments ** 2)
+            additional_days = ACCELERATION_FACTOR * num_increments
 
         total_days = BASE_DAYS + additional_days
 
@@ -154,7 +161,3 @@ class CampaignService:
         future_date = today + timedelta(days=int(total_days))
 
         return future_date
-
-
-
-

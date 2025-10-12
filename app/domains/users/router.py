@@ -9,7 +9,7 @@ from app.helpers.bases import DataResponse
 from .schemas import UserCreateReq, UserResponse, UpdateUserReq
 from .services import UserService
 from .models import User
-from app.helpers.deps import get_current_user
+from app.helpers.deps import get_current_user, get_current_user_id
 from app.helpers.paging import Page, PaginationParams
 from app.helpers.login_manager import permission_required
 import logging
@@ -37,13 +37,14 @@ async def register(register_data: UserCreateReq,
 async def get_current_info(
         user: User = Depends(get_current_user),
         user_service: UserService = Depends(get_user_service),
-        redis_client: redis.Redis = Depends(get_redis_client)
+        redis_client: redis.Redis = Depends(get_redis_client),
+        db: AsyncSession = Depends(get_db)
 ):
     cache_key = f"user:{user.id}"
     cached_user = redis_client.get(cache_key)
     if cached_user:
         return DataResponse(data=UserResponse.model_validate(json.loads(cached_user)))
-    response = user_service.get_my_profile(user)
+    response = await user_service.get_my_profile(db=db, user=user)
     redis_client.set(cache_key, response.model_dump_json(), ex=600)
     return DataResponse(data=response)
 
@@ -83,7 +84,7 @@ async def get_all(params: PaginationParams = Depends(),
                   user_service: UserService = Depends(get_user_service),
                   redis_client: redis.Redis = Depends(get_redis_client)
                   ) -> Any:
-    cache_key = f"users:page_{params.page}:size_{params.size}"
+    cache_key = f"users:page_{params.page}:size_{params.page_size}"
     cached_users = redis_client.get(cache_key)
     if cached_users:
         return Page[UserResponse].model_validate(json.loads(cached_users))

@@ -63,7 +63,7 @@ async def paginate(db: AsyncSession,
     message = 'Success'
 
     try:
-        count_query = select(func.count()).select_from(query.subquery())
+        count_query = select(func.count()).select_from(model)
         total_result = await db.execute(count_query)
         total = total_result.scalar_one()
 
@@ -73,7 +73,7 @@ async def paginate(db: AsyncSession,
 
         query = query.limit(params.page_size).offset(params.page_size * (params.page - 1))
         data_result = await db.execute(query)
-        data = data_result.scalars().all()
+        data = data_result.unique().scalars().all()
 
         if mapper:
             mapped_data = [mapper(item) for item in data]
