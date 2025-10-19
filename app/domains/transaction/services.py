@@ -18,7 +18,9 @@ from ..users.models import User
 from .mappers import TransactionMapper
 from datetime import datetime
 from fastapi import HTTPException, Request
-from payos import PayOS
+from payos import PayOS, PaymentData
+from payos.type import WebhookData
+import re
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select
 from app.helpers.paging import paginate, PaginationParams
@@ -26,7 +28,6 @@ from decimal import Decimal
 from typing import Optional
 from .interface import ITransactionService
 from app.helpers.enums import WithdrawalStatus
-
 class DonationService(ITransactionService):
     def __init__(self):
         pass
@@ -35,20 +36,28 @@ class DonationService(ITransactionService):
         webhook_body = await data.json()
 
         try:
-            verified_data = payos_client.verifyPaymentWebhookData(webhook_body)
+            verified_data: WebhookData = payos_client.verifyPaymentWebhookData(webhook_body) # Có thể raise Exception
 
-            code = verified_data['description']
+            original_description = verified_data['description']
             amount = verified_data['amount']
             bank_number = verified_data['counterAccountNumber']
             bank_name = verified_data['counterAccountName']
 
-            des_split = code.split('-')
-            if len(des_split) != 0:
-                campaign_id = des_split[1]
-            
+            # 1. Trích xuất campaign_id từ giữa hai chuỗi 'brm'
+            campaign_id_match = re.search(r'brm(\d+)brm', original_description)
+
+            # 2. Trích xuất new_code là chuỗi bắt đầu bằng 'TSS'
+            new_code_match = re.search(r'(TSS.*)', original_description)
+
+            # 3. Kiểm tra xem cả hai thông tin có hợp lệ không
+            if not campaign_id_match or not new_code_match:
+                raise CustomException(error_type=ExceptionType.FAIL_TO_GET, custom_message=f"Invalid transaction code format: {original_description}")
+
+            campaign_id = campaign_id_match.group(1)
+            new_code = new_code_match.group(1)
+
             res_donate = await db.execute(
-                select(Donation).options(
-                ).filter(Donation.code == code)
+                select(Donation).filter(Donation.code == new_code)
             )
             donation: Donation | None = res_donate.scalar_one_or_none()
             if not donation:
@@ -56,7 +65,7 @@ class DonationService(ITransactionService):
                     bank_name=bank_name,
                     bank_number=bank_number,
                     amount=amount,
-                    content=code,
+                    content=original_description,
                     status='pending'
                 )
                 db.add(transaction_err)
@@ -73,6 +82,7 @@ class DonationService(ITransactionService):
             await db.refresh(campaign)
             return TransactionMapper.to_donation_response(donation)
         except Exception as e:
+            # Bắt các lỗi chung khác (lỗi database, logic,...)
             raise CustomException(error_type=ExceptionType.FAIL_TO_GET, custom_message=str(e))
 
 
@@ -81,11 +91,11 @@ class DonationService(ITransactionService):
 
         
 
-    async def create_donation(self, data: DonationReq, db: AsyncSession, user: User, payos_client: PayOS)-> dict:
+    async def create_donation(self, data: DonationReq, db: AsyncSession, user: User| None, payos_client: PayOS)-> dict:
         campaign: Campaign | None = await db.get(Campaign, data.campaign_id)
         if not campaign:
             raise CustomException(error_type=ExceptionType.CAMPAIGN_NOT_FOUND)
-        code = f'TS-{campaign.id}-{int(datetime.now().timestamp())}'
+        code = f'TSSSbrm{campaign.id}brm{int(datetime.now().timestamp())}'
         donation: Donation = Donation(
             campaign_id=campaign.id,
             code=code,
@@ -93,18 +103,19 @@ class DonationService(ITransactionService):
             user_id=user.id if user else None,
             anonymous_name=data.full_name if not user else None,
             user_name=data.full_name if user else None,
+            transaction_id=code,
+            bank_number='',
+            bank_name='',
+            amount=Decimal(0),  # Initialize amount to 0
         )
         db.add(donation)
         await db.commit()
         await db.refresh(donation)
-        payment_data = {
-            "orderCode": donation.id, 
-            "description": code, 
-            "returnUrl": f"https://your-frontend.com/donation/success/{donation.id}",
-            "cancelUrl": f"https://your-frontend.com/donation/failed/{donation.id}"
-        }
+        payment_data = PaymentData(amount=100000,orderCode=donation.id, description=code, returnUrl=f"https://your-frontend.com/donation/success/{donation.id}",
+                                   cancelUrl=f"https://your-frontend.com/donation/failed/{donation.id}")
+    
         try:
-            payment_link_info = payos_client.createPaymentLink(payment_data)
+            payment_link_info = payos_client.createPaymentLink(paymentData=payment_data)
             return payment_link_info
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
@@ -270,5 +281,3 @@ class DonationService(ITransactionService):
         return donations
     
     
-
-

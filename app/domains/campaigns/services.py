@@ -26,7 +26,7 @@ class CampaignService:
             goal_amount = data.goal_amount,
             end_date = self.calculate_end_date(data.goal_amount),
             creator = user,
-            creator_id = user.id,
+            creator_id=user.id,
         )
         db.add(campaign)
         await db.commit()
