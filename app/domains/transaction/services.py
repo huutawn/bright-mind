@@ -1,5 +1,4 @@
 from ast import Dict
-from tkinter import W
 from .schemas import (
     DonationReq,
     DonationResponse,

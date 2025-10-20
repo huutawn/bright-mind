@@ -25,21 +25,5 @@ class Campaign(BareBaseModel):
     code: Mapped[Optional[str]] = mapped_column(String)
     withdrawal: Mapped[Optional[List['Withdrawal']]] = relationship(back_populates='campaign',cascade='all', foreign_keys='Withdrawal.campaign_id')
 
-    def __init__(self, title: str, description: str, cover_image_url: str, goal_amount: Decimal, 
-                 end_date: date, creator_id: int, user_depend_id: Optional[int] = None,
-                 current_amount: Decimal = Decimal('0.00'), used_amount: Decimal = Decimal('0.00'),
-                 status: str = CampaignStatus.PENDING.value, quickly_used: bool = False,
-                 code: Optional[str] = None):
-        self.title = title
-        self.description = description
-        self.cover_image_url = cover_image_url
-        self.goal_amount = goal_amount
-        self.current_amount = current_amount
-        self.used_amount = used_amount
-        self.status = status
-        self.end_date = end_date
-        self.creator_id = creator_id
-        self.user_depend_id = user_depend_id
-        self.quickly_used = quickly_used
-        self.code = code
+    
     

@@ -14,17 +14,10 @@ class User(BaseWithId):
     last_login: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     campaign: Mapped[Optional[List['Campaign']]] = relationship(back_populates='creator',cascade='all, delete-orphan',foreign_keys='Campaign.creator_id', lazy='selectin')
     campaign_depended: Mapped[Optional[List['Campaign']]] = relationship(back_populates='user_depend_on', cascade='all',foreign_keys='Campaign.user_depend_id')
-    user_profile: Mapped['UserProfile'] = relationship(back_populates='user', cascade='all, delete-orphan')
+    user_profile: Mapped[Optional['UserProfile']] = relationship(back_populates='user', cascade='all, delete-orphan')
     donation: Mapped[Optional[List['Donation']]] = relationship(back_populates='user', cascade='all')
 
-    def __init__(self, email: str, hash_password: str, is_active: bool = True, 
-                 role: str = 'user', status: str = 'active', last_login: Optional[datetime] = None):
-        self.email = email
-        self.hash_password = hash_password
-        self.is_active = is_active
-        self.role = role
-        self.status = status
-        self.last_login = last_login
+    
 
 class UserProfile(BaseWithId):
     full_name: Mapped[Optional[str]] = mapped_column(String(100))
@@ -34,13 +27,7 @@ class UserProfile(BaseWithId):
     user: Mapped['User'] = relationship(back_populates='user_profile')
     user_id: Mapped[int] = mapped_column(ForeignKey('user.id'))
 
-    def __init__(self, user_id: int, email: str, full_name: Optional[str] = None, 
-                 phone: Optional[str] = None, logo: Optional[str] = None):
-        self.user_id = user_id
-        self.email = email
-        self.full_name = full_name
-        self.phone = phone
-        self.logo = logo
+    
 
 
 

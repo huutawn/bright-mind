@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict
 from decimal import Decimal
 from ..users.schemas import UserResponse
 
+
 class CampaignBase(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None

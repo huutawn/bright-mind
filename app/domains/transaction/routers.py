@@ -1,4 +1,3 @@
-from this import d
 from fastapi import APIRouter, Depends, Request
 
 from app.core.payos_client import get_payos_client
