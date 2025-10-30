@@ -12,7 +12,7 @@ Tài liệu này mô tả quy trình từng bước để thêm một model SQLA
 2.  Tạo file `model_book.py` với nội dung sau:
 
 ```python
-# app/domains/book/model_book.py
+# app/features/book/model_book.py
 from sqlalchemy import Column, String, DateTime
 
 # Đường dẫn này có thể cần điều chỉnh tùy theo cấu trúc của bạn
@@ -39,7 +39,7 @@ class Book(BareBaseModel):
 # ... (các dòng import khác nếu có)
 
 # Import model mới để Alembic có thể phát hiện
-from app.domains.book.model_book import Book
+from app.features.book.model_book import Book
 ```
 
 ### Bước 3: Tạo File Migration

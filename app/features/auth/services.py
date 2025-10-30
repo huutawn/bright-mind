@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .schemas import Token, AuthReq
-from app.domains.users.models import User
+from app.features.users.models import User
 from .models import InvalidateToken
 from app.core.config import settings
 from app.core.security import (

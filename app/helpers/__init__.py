@@ -1,4 +1,4 @@
-from app.domains.users.models import User, UserProfile
-from app.domains.auth.models import InvalidateToken
-from app.domains.campaigns.models import Campaign
-from app.domains.transaction.models import Donation, Withdrawal, Proof, ProofImage
+from app.features.users.models import User, UserProfile
+from app.features.auth.models import InvalidateToken
+from app.features.campaigns.models import Campaign
+from app.features.transaction.models import Donation, Withdrawal, Proof, ProofImage

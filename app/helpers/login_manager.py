@@ -1,5 +1,5 @@
 from fastapi import Depends, HTTPException, status
-from app.domains.users.models import User
+from app.features.users.models import User
 # Giả sử get_current_user đã được định nghĩa là async
 from .deps import get_current_user
 

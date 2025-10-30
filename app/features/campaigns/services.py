@@ -116,7 +116,12 @@ class CampaignService:
         return CampaignChoosing(campaign_id=campaign.id,status=campaign.status)
     async def get_detail(self, campaign_id: int,
                          db: AsyncSession) -> CampaignResponse:
-        campaign: Campaign | None = await db.get(Campaign, campaign_id)
+        query = select(Campaign).options(
+            selectinload(Campaign.creator)
+            .selectinload(User.user_profile)
+        ).filter(Campaign.id == campaign_id)
+        res = await db.execute(query)
+        campaign: Campaign | None = res.scalar_one_or_none()
         if not campaign:
             raise CustomException(ExceptionType.CAMPAIGN_NOT_FOUND)
         return CampaignMapper.toCampaignResponse(campaign=campaign)

@@ -6,7 +6,7 @@ from app.helpers.deps import get_current_user
 import logging
 from app.db.base import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.domains.users.models import User
+from app.features.users.models import User
 
 router = APIRouter()
 

@@ -4,7 +4,7 @@ from typing import Any, Union
 from app.core.config import settings
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
-from app.domains.users.models import User
+from app.features.users.models import User
 import uuid
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

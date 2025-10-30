@@ -7,14 +7,14 @@ from .services import DonationService
 from app.helpers.deps import get_current_user, get_current_user_optional
 from app.helpers.bases import DataResponse
 from app.helpers.paging import Page, PaginationParams
-from app.domains.transaction.models import Donation
-from app.domains.users.models import User
+from app.features.transaction.models import Donation
+from app.features.users.models import User
 from app.helpers.login_manager import permission_required
 from app.db.base import get_db
 import json
 import redis
 from app.core.redis_client import get_redis_client
-from app.domains.transaction.schemas import (
+from app.features.transaction.schemas import (
     DonationReq,
     DonationResponse,
     WithdrawalCreateReq,
@@ -54,7 +54,7 @@ async def get_all_donation(
     redis_client: redis.Redis = Depends(get_redis_client),
 ):
     cache_key = f"donation:page_{params.page}:size_{params.page_size}"
-    cached_donations = await redis_client.get(cache_key)
+    cached_donations =  redis_client.get(cache_key)
     if cached_donations:
         return Page[DonationResponse].model_validate(json.loads(cached_donations))
     res = await donation_service.get_all_donation(db, user, params)

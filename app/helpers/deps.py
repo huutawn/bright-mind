@@ -6,9 +6,9 @@ from app.core.config import settings
 from typing import Optional
 from app.db.base import get_db
 from sqlalchemy import select
-from ..domains.users.models import User
-from ..domains.auth.models import InvalidateToken
-from ..domains.users.schemas import TokenPayload
+from ..features.users.models import User
+from ..features.auth.models import InvalidateToken
+from ..features.users.schemas import TokenPayload
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from ..helpers.exception_handler import CustomException, ExceptionType
 import logging

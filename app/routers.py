@@ -1,10 +1,10 @@
 from fastapi import APIRouter
 
-from .domains.users import router as user_router
-from .domains.auth import router as auth_router
-from .domains.files import routers as file_router
-from .domains.campaigns import routers as campaign_router
-from .domains.transaction import routers as transaction_router
+from .features.users import router as user_router
+from .features.auth import router as auth_router
+from .features.files import routers as file_router
+from .features.campaigns import routers as campaign_router
+from .features.transaction import routers as transaction_router
 router = APIRouter()
 
 router.include_router(user_router.router, tags=["users"], prefix="/users")

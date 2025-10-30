@@ -29,3 +29,5 @@ class CampaignResponse(CampaignBase):
     creator: Optional['UserResponse']
     end_date: Optional[date]
     quickly_used: bool
+
+    
