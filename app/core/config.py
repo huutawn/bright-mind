@@ -4,6 +4,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
 
+import os
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -27,6 +32,8 @@ class Settings(BaseSettings):
     PAYOS_API_KEY: str
     PAYOS_CHECKSUM_KEY: str
     REDIS_URL:str
+    GEMINI_API_KEY: str
+    ENVIRONMENT: str = 'development'  # development | production
 
 
 

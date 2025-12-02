@@ -10,7 +10,7 @@ import uuid
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def create_access_token(user: User) -> str:
+def create_access_token(user: User) -> dict:
     expire = datetime.utcnow() + timedelta(
         seconds=settings.ACCESS_TOKEN_EXPIRE_SECONDS
     )
@@ -18,7 +18,7 @@ def create_access_token(user: User) -> str:
         "exp": expire, "sub": str(user.id), 'type': 'access', 'role': user.role, 'jti': str(uuid.uuid4())
     }
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.SECURITY_ALGORITHM)
-    return encoded_jwt
+    return {'access_token': encoded_jwt, 'exp': expire}
 
 
 def create_refresh_token(subject: Union[int, Any]) -> str:

@@ -20,7 +20,6 @@ class AuthService:
     def __init__(self):
         pass
 
-    # ✅ Chuyển sang async, nhận db, thêm self
     async def authenticate(self, db: AsyncSession, data: AuthReq) -> Token:
         query = select(User).filter(User.email == data.email)
         result = await db.execute(query)
@@ -33,12 +32,11 @@ class AuthService:
         if not verify_password(data.password, user.hash_password):
             raise CustomException(error_type=ExceptionType.WRONG_PASSWORD)
         user.last_login = datetime.now(timezone.utc)
-        access_token = create_access_token(user=user)
+        access_token: dict = create_access_token(user=user)
         refresh_token = create_refresh_token(subject=user.id)
         await db.commit()
-        return Token(access_token=access_token, refresh_token=refresh_token)
+        return Token(access_token=access_token['access_token'], refresh_token=refresh_token, expires_at=access_token['exp'])
 
-    # ✅ Chuyển sang async, nhận db
     async def refresh_token(self, db: AsyncSession, token: str) -> Token:
         try:
             # jwt.decode là CPU-bound, không cần await
@@ -52,7 +50,6 @@ class AuthService:
                 raise CustomException(error_type=ExceptionType.INVALIDATE_TOKEN)
 
             user_id = int(payload.get('sub'))
-            # ✅ Dùng await db.get() để lấy user theo ID
             user: User | None = await db.get(User, user_id)
 
             if not user:
@@ -65,7 +62,6 @@ class AuthService:
             logging.error(f"Failed to refresh token: {e}")
             raise CustomException(error_type=ExceptionType.INVALIDATE_TOKEN)
 
-    # ✅ Chuyển sang async, nhận db
     async def log_out(self, db: AsyncSession, token: str):
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.SECURITY_ALGORITHM])
 
@@ -77,6 +73,5 @@ class AuthService:
 
         invalidated_token = InvalidateToken(jti=jti, exp=datetime.fromtimestamp(exp))
         db.add(invalidated_token)
-        # ✅ Dùng await cho commit
         await db.commit()
         return 'success'

@@ -30,7 +30,7 @@ class UserService:
 
         if exits_user:
             raise CustomException(error_type=ExceptionType.EMAIL_IS_TAKEN)
-        profile = UserProfile(email=data.email)
+        profile = UserProfile(email=data.email,full_name=data.full_name)
         new_user = User(
             email=data.email,
             hash_password=get_password_hash(data.password),

@@ -29,6 +29,7 @@ class UserResponse(UserBase):
 class UserCreateReq(UserBase):
     email: EmailStr
     password: str
+    full_name: Optional[str]
     role: str = 'user'
 
 

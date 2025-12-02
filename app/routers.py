@@ -12,3 +12,6 @@ router.include_router(auth_router.router, tags=['AUTH'], prefix="/auth")
 router.include_router(file_router.router, tags=['files'],prefix='/upload')
 router.include_router(campaign_router.router, tags=['Campaign'], prefix='/campaign')
 router.include_router(transaction_router.router, tags=['Transaction'], prefix='/transaction')
+
+from .features.demo_gemini import router as demo_gemini_router
+router.include_router(demo_gemini_router.router, tags=['Gemini Demo'], prefix='/gemini')

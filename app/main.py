@@ -15,7 +15,6 @@ from app.helpers.exception_handler import CustomException, http_exception_handle
 logging.basicConfig(level=logging.INFO)
 
 
-# ✅ Đưa logic MinIO vào một hàm riêng
 def init_minio():
     try:
         minio_client = Minio(
@@ -28,7 +27,6 @@ def init_minio():
         found = minio_client.bucket_exists(settings.MINIO_BUCKET)
         if not found:
             minio_client.make_bucket(settings.MINIO_BUCKET)
-            # Thiết lập policy public-read cho bucket mới tạo
             policy = {
                 "Version": "2012-10-17",
                 "Statement": [

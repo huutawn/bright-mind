@@ -21,39 +21,6 @@ class Donation(BareBaseModel):
     status: Mapped[str] = mapped_column(String, default='pending')
     code: Mapped[Optional[str]] = mapped_column(String)
 
-    
-
-
-class Withdrawal(BareBaseModel):
-    campaign: Mapped['Campaign'] = relationship(back_populates='withdrawal')
-    campaign_id: Mapped[int] = mapped_column(ForeignKey('campaign.id'))
-    amount: Mapped[Decimal] = mapped_column(DECIMAL(12, 2))
-    type: Mapped[Optional[str]] = mapped_column(String, default='normal')
-    status: Mapped[Optional[str]] = mapped_column(String, default='pending')
-    reason: Mapped[Optional[str]] = mapped_column(Text)
-    approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    proof: Mapped[Optional[List['Proof']]] = relationship(back_populates='withdrawal', cascade='all, delete-orphan', foreign_keys='Proof.withdrawal_id')
-
-    
-
-
-class Proof(BareBaseModel):
-    withdrawal_id: Mapped[int] = mapped_column(ForeignKey('withdrawal.id'))
-    withdrawal: Mapped['Withdrawal'] = relationship(back_populates='proof',foreign_keys='Proof.withdrawal_id')
-    proof_image: Mapped[List['ProofImage']] = relationship(back_populates='proof', cascade='all, delete-orphan')
-    description: Mapped[Optional[str]] = mapped_column(Text)
-    ai_validated_amount: Mapped[Optional[Decimal]] = mapped_column(DECIMAL(12, 2))
-    ai_validation_status: Mapped[Optional[str]] = mapped_column(String)
-
-    
-
-
-class ProofImage(BareBaseModel):
-    image_url: Mapped[str] = mapped_column(String(200))
-    proof: Mapped['Proof'] = relationship(back_populates='proof_image')
-    proof_id: Mapped[int] = mapped_column(ForeignKey('proof.id'))
-
-    
 
 class TransactionError(BareBaseModel):
     bank_name: Mapped[Optional[str]] = mapped_column(String)
